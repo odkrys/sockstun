@@ -112,7 +112,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			if (prepareVpnIntent != null) {
 				startActivityForResult(prepareVpnIntent, 0);
 			} else {
-				startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					startForegroundService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+				} else {
+					startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+				}
 			}
 		}
 	}
