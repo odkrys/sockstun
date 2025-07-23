@@ -229,6 +229,7 @@ public class TProxyService extends VpnService {
 
 	private void sendVpnStatusChangedBroadcast() {
 		Intent intent = new Intent(ACTION_VPN_STATUS_CHANGED);
+		intent.setPackage(getPackageName());
 		sendBroadcast(intent);
 	}
 }

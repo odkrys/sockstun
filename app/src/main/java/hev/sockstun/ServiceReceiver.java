@@ -18,6 +18,10 @@ import android.os.Build;
 public class ServiceReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
+		String action = intent.getAction();
+		if (action == null) {
+			return;
+		}
 		if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
 			Preferences prefs = new Preferences(context);
 
@@ -35,6 +39,24 @@ public class ServiceReceiver extends BroadcastReceiver {
 					context.startService(i.setAction(TProxyService.ACTION_CONNECT));
 				}
 			}
+		} else if (action.equals(TProxyService.ACTION_VPN_STATUS_CHANGED)) {
+			Preferences prefs = new Preferences(context);
+			boolean isServiceActuallyRunning = isServiceRunning(context, TProxyService.class);
+				if (prefs.getEnable() != isServiceActuallyRunning) {
+				prefs.setEnable(isServiceActuallyRunning);
+			}
 		}
+	}
+
+	private boolean isServiceRunning(Context context, Class<?> serviceClass) {
+		android.app.ActivityManager manager = (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+		if (manager != null) {
+			for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+				if (serviceClass.getName().equals(service.service.getClassName())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
