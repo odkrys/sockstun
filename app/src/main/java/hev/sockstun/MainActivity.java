@@ -103,6 +103,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		} else {
 			registerReceiver(vpnStatusReceiver, filter);
 		}
+
+		updateUI();
 		checkAndSyncVpnState();
 	}
 
@@ -168,7 +170,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		if (prefs.getEnable() != targetVpnState) {
 			prefs.setEnable(targetVpnState);
-			savePrefs();
 		}
 		updateUI();
 	}
