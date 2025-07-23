@@ -36,6 +36,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private EditText edittext_dns_ipv4;
 	private EditText edittext_dns_ipv6;
 	private CheckBox checkbox_udp_in_tcp;
+	private CheckBox checkbox_auto_start;
 	private CheckBox checkbox_global;
 	private CheckBox checkbox_ipv4;
 	private CheckBox checkbox_ipv6;
@@ -69,11 +70,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		checkbox_ipv6 = findViewById(R.id.ipv6);
 		checkbox_global = findViewById(R.id.global);
 		checkbox_udp_in_tcp = findViewById(R.id.udp_in_tcp);
+		checkbox_auto_start = findViewById(R.id.auto_start);
 		button_apps = findViewById(R.id.apps);
 		button_save = findViewById(R.id.save);
 		button_control = findViewById(R.id.control);
 
 		checkbox_udp_in_tcp.setOnClickListener(this);
+		checkbox_auto_start.setOnClickListener(this);
 		checkbox_global.setOnClickListener(this);
 		button_apps.setOnClickListener(this);
 		button_save.setOnClickListener(this);
@@ -81,11 +84,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		/* Request VPN permission */
 		Intent intent = VpnService.prepare(MainActivity.this);
-		if (intent != null)
+		if (intent != null) {
 			startActivityForResult(intent, 0);
-		else
-			onActivityResult(0, RESULT_OK, null);
-
+		} else {
+			if (prefs.getAutoStart()) {
+				startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+			}
+		}
 		requestNotificationPermission();
 	}
 
@@ -109,13 +114,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	@Override
 	protected void onActivityResult(int request, int result, Intent data) {
-		if ((result == RESULT_OK) && prefs.getEnable()) {
-			Intent intent = new Intent(this, TProxyService.class);
-			startService(intent.setAction(TProxyService.ACTION_CONNECT));
-		} else if (result != RESULT_OK) {
-			prefs.setEnable(false);
-			savePrefs();
-			updateUI();
+		if (request == 0) {
+			if (result == RESULT_OK) {
+				if (prefs.getAutoStart()) {
+					startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+				}
+				else if (prefs.getEnable()) {
+					startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+				}
+			} else {
+				prefs.setEnable(false);
+				prefs.setAutoStart(false);
+				savePrefs();
+				updateUI();
+				Toast.makeText(this, "VPN permission denied", Toast.LENGTH_SHORT).show();
+			}
 		}
 	}
 
@@ -130,6 +143,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			savePrefs();
 			Context context = getApplicationContext();
 			Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show();
+		} else if (view == checkbox_auto_start) {
+			prefs.setAutoStart(checkbox_auto_start.isChecked());
+			savePrefs();
+			updateUI();
 		} else if (view == button_control) {
 			boolean isEnable = prefs.getEnable();
 			prefs.setEnable(!isEnable);
@@ -190,6 +207,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		checkbox_ipv6.setChecked(prefs.getIpv6());
 		checkbox_global.setChecked(prefs.getGlobal());
 		checkbox_udp_in_tcp.setChecked(prefs.getUdpInTcp());
+		checkbox_auto_start.setChecked(prefs.getAutoStart());
 
 		boolean isVpnEnabled = prefs.getEnable();
 		boolean editable = !isVpnEnabled;
@@ -201,6 +219,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		edittext_dns_ipv4.setEnabled(editable);
 		edittext_dns_ipv6.setEnabled(editable);
 		checkbox_udp_in_tcp.setEnabled(editable);
+		checkbox_auto_start.setEnabled(editable);
 		checkbox_global.setEnabled(editable);
 		checkbox_ipv4.setEnabled(editable);
 		checkbox_ipv6.setEnabled(editable);
@@ -226,5 +245,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		prefs.setIpv6(checkbox_ipv6.isChecked());
 		prefs.setGlobal(checkbox_global.isChecked());
 		prefs.setUdpInTcp(checkbox_udp_in_tcp.isChecked());
+		prefs.setAutoStart(checkbox_auto_start.isChecked());
 	}
 }

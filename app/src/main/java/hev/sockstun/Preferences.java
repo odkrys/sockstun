@@ -29,6 +29,7 @@ public class Preferences
 	public static final String UDP_IN_TCP = "UdpInTcp";
 	public static final String APPS = "Apps";
 	public static final String ENABLE = "Enable";
+	public static final String AUTO_START = "auto_start";
 
 	private SharedPreferences prefs;
 
@@ -105,6 +106,17 @@ public class Preferences
 		editor.putBoolean(UDP_IN_TCP, enable);
 		editor.commit();
 	}
+
+	public boolean getAutoStart() {
+		return prefs.getBoolean(AUTO_START, false);
+	}
+
+	public void setAutoStart(boolean enable) {
+		SharedPreferences.Editor editor = prefs.edit();
+		editor.putBoolean(AUTO_START, enable);
+		editor.commit();
+	}
+
 
 	public boolean getIpv4() {
 		return prefs.getBoolean(IPV4, true);
