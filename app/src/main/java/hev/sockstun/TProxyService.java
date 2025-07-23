@@ -35,39 +35,50 @@ public class TProxyService extends VpnService {
 
 	public static final String ACTION_CONNECT = "hev.sockstun.CONNECT";
 	public static final String ACTION_DISCONNECT = "hev.sockstun.DISCONNECT";
+	public static final String ACTION_VPN_STATUS_CHANGED = "hev.sockstun.VPN_STATUS_CHANGED";
 
 	static {
 		System.loadLibrary("hev-socks5-tunnel");
 	}
 
 	private ParcelFileDescriptor tunFd = null;
+	private Preferences prefs;
+
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		prefs = new Preferences(this);
+	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if (intent != null && ACTION_DISCONNECT.equals(intent.getAction())) {
 			stopService();
+			sendVpnStatusChangedBroadcast();
 			return START_NOT_STICKY;
 		}
 		startService();
+		sendVpnStatusChangedBroadcast();
 		return START_STICKY;
 	}
 
 	@Override
 	public void onDestroy() {
+		prefs.setEnable(false);
+		sendVpnStatusChangedBroadcast();
 		super.onDestroy();
 	}
 
 	@Override
 	public void onRevoke() {
 		stopService();
+		sendVpnStatusChangedBroadcast();
 		super.onRevoke();
 	}
 
 	public void startService() {
 		if (tunFd != null)
-		  return;
-
-		Preferences prefs = new Preferences(this);
+			return;
 
 		/* VPN */
 		String session = new String();
@@ -120,6 +131,7 @@ public class TProxyService extends VpnService {
 		tunFd = builder.establish();
 		if (tunFd == null) {
 			stopSelf();
+			sendVpnStatusChangedBroadcast();
 			return;
 		}
 
@@ -160,7 +172,7 @@ public class TProxyService extends VpnService {
 
 	public void stopService() {
 		if (tunFd == null)
-		  return;
+			return;
 
 		stopForeground(true);
 
@@ -173,19 +185,31 @@ public class TProxyService extends VpnService {
 		} catch (IOException e) {
 		}
 		tunFd = null;
+		prefs.setEnable(false);
 
-		System.exit(0);
+		stopSelf();
 	}
 
 	private void createNotification(String channelName) {
-		Intent i = new Intent(this, TProxyService.class);
-		PendingIntent pi = PendingIntent.getService(this, 0, i, PendingIntent.FLAG_IMMUTABLE);
-		NotificationCompat.Builder notification = new NotificationCompat.Builder(this, channelName);
-		Notification notify = notification
+		Intent notificationIntent = new Intent(this, MainActivity.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+
+		Intent disconnectIntent = new Intent(this, TProxyService.class);
+		disconnectIntent.setAction(ACTION_DISCONNECT);
+		PendingIntent disconnectPendingIntent = PendingIntent.getService(this, 1, disconnectIntent, PendingIntent.FLAG_IMMUTABLE);
+
+		NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelName);
+		boolean isVpnEnabled = prefs.getEnable();
+		notificationBuilder
 				.setContentTitle(getString(R.string.app_name))
+				.setContentText("VPN is connected")
 				.setSmallIcon(android.R.drawable.sym_def_app_icon)
-				.setContentIntent(pi)
-				.build();
+				.setContentIntent(contentIntent)
+				.setOngoing(isVpnEnabled)
+				.addAction(R.drawable.ic_disconnect, "Stop", disconnectPendingIntent);
+
+		Notification notify = notificationBuilder.build();
+
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 			startForeground(1, notify);
 		} else {
@@ -201,5 +225,10 @@ public class TProxyService extends VpnService {
 			NotificationChannel channel = new NotificationChannel(channelName, name, NotificationManager.IMPORTANCE_DEFAULT);
 			notificationManager.createNotificationChannel(channel);
 		}
+	}
+
+	private void sendVpnStatusChangedBroadcast() {
+		Intent intent = new Intent(ACTION_VPN_STATUS_CHANGED);
+		sendBroadcast(intent);
 	}
 }

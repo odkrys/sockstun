@@ -8,17 +8,20 @@
  */
 
 package hev.sockstun;
-
-import android.os.Bundle;
 import android.app.Activity;
-import android.content.Intent;
+import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.content.Context;
+import android.content.Intent;
+import android.net.VpnService;
+import android.os.Build;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
-import android.net.VpnService;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 	private Preferences prefs;
@@ -36,6 +39,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private Button button_save;
 	private Button button_control;
 
+	private BroadcastReceiver vpnStatusReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (TProxyService.ACTION_VPN_STATUS_CHANGED.equals(intent.getAction())) {
+				checkAndSyncVpnState();
+			}
+		}
+	};
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -43,33 +55,50 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		prefs = new Preferences(this);
 		setContentView(R.layout.main);
 
-		edittext_socks_addr = (EditText) findViewById(R.id.socks_addr);
-		edittext_socks_port = (EditText) findViewById(R.id.socks_port);
-		edittext_socks_user = (EditText) findViewById(R.id.socks_user);
-		edittext_socks_pass = (EditText) findViewById(R.id.socks_pass);
-		edittext_dns_ipv4 = (EditText) findViewById(R.id.dns_ipv4);
-		edittext_dns_ipv6 = (EditText) findViewById(R.id.dns_ipv6);
-		checkbox_ipv4 = (CheckBox) findViewById(R.id.ipv4);
-		checkbox_ipv6 = (CheckBox) findViewById(R.id.ipv6);
-		checkbox_global = (CheckBox) findViewById(R.id.global);
-		checkbox_udp_in_tcp = (CheckBox) findViewById(R.id.udp_in_tcp);
-		button_apps = (Button) findViewById(R.id.apps);
-		button_save = (Button) findViewById(R.id.save);
-		button_control = (Button) findViewById(R.id.control);
+		edittext_socks_addr = findViewById(R.id.socks_addr);
+		edittext_socks_port = findViewById(R.id.socks_port);
+		edittext_socks_user = findViewById(R.id.socks_user);
+		edittext_socks_pass = findViewById(R.id.socks_pass);
+		edittext_dns_ipv4 = findViewById(R.id.dns_ipv4);
+		edittext_dns_ipv6 = findViewById(R.id.dns_ipv6);
+		checkbox_ipv4 = findViewById(R.id.ipv4);
+		checkbox_ipv6 = findViewById(R.id.ipv6);
+		checkbox_global = findViewById(R.id.global);
+		checkbox_udp_in_tcp = findViewById(R.id.udp_in_tcp);
+		button_apps = findViewById(R.id.apps);
+		button_save = findViewById(R.id.save);
+		button_control = findViewById(R.id.control);
 
 		checkbox_udp_in_tcp.setOnClickListener(this);
 		checkbox_global.setOnClickListener(this);
 		button_apps.setOnClickListener(this);
 		button_save.setOnClickListener(this);
 		button_control.setOnClickListener(this);
-		updateUI();
 
 		/* Request VPN permission */
 		Intent intent = VpnService.prepare(MainActivity.this);
 		if (intent != null)
-		  startActivityForResult(intent, 0);
+			startActivityForResult(intent, 0);
 		else
-		  onActivityResult(0, RESULT_OK, null);
+			onActivityResult(0, RESULT_OK, null);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		IntentFilter filter = new IntentFilter(TProxyService.ACTION_VPN_STATUS_CHANGED);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+			registerReceiver(vpnStatusReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+		} else {
+			registerReceiver(vpnStatusReceiver, filter);
+		}
+		checkAndSyncVpnState();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		unregisterReceiver(vpnStatusReceiver);
 	}
 
 	@Override
@@ -77,6 +106,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		if ((result == RESULT_OK) && prefs.getEnable()) {
 			Intent intent = new Intent(this, TProxyService.class);
 			startService(intent.setAction(TProxyService.ACTION_CONNECT));
+		} else if (result != RESULT_OK) {
+			prefs.setEnable(false);
+			savePrefs();
+			updateUI();
 		}
 	}
 
@@ -104,6 +137,31 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
+	private void checkAndSyncVpnState() {
+		boolean isVpnActuallyRunningByOurService = isServiceRunning(TProxyService.class);
+		boolean isVpnPermissionGranted = (VpnService.prepare(this) == null);
+
+		boolean targetVpnState = isVpnActuallyRunningByOurService && isVpnPermissionGranted;
+
+		if (prefs.getEnable() != targetVpnState) {
+			prefs.setEnable(targetVpnState);
+			savePrefs();
+		}
+		updateUI();
+	}
+
+	private boolean isServiceRunning(Class<?> serviceClass) {
+		ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+		if (manager != null) {
+			for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+				if (serviceClass.getName().equals(service.service.getClassName())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private void updateUI() {
 		edittext_socks_addr.setText(prefs.getSocksAddress());
 		edittext_socks_port.setText(Integer.toString(prefs.getSocksPort()));
@@ -116,7 +174,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		checkbox_global.setChecked(prefs.getGlobal());
 		checkbox_udp_in_tcp.setChecked(prefs.getUdpInTcp());
 
-		boolean editable = !prefs.getEnable();
+		boolean isVpnEnabled = prefs.getEnable();
+		boolean editable = !isVpnEnabled;
+
 		edittext_socks_addr.setEnabled(editable);
 		edittext_socks_port.setEnabled(editable);
 		edittext_socks_user.setEnabled(editable);
