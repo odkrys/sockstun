@@ -106,6 +106,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		updateUI();
 		checkAndSyncVpnState();
+
+		if (prefs.getAutoStart() && !isServiceRunning(TProxyService.class)) {
+			Intent prepareVpnIntent = VpnService.prepare(MainActivity.this);
+			if (prepareVpnIntent != null) {
+				startActivityForResult(prepareVpnIntent, 0);
+			} else {
+				startService(new Intent(this, TProxyService.class).setAction(TProxyService.ACTION_CONNECT));
+			}
+		}
 	}
 
 	@Override
