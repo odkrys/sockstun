@@ -70,6 +70,12 @@ public class TProxyService extends VpnService {
 	}
 
 	@Override
+	public void onTaskRemoved(Intent rootIntent) {
+		stopForeground(true);
+		stopSelf();
+	}
+
+	@Override
 	public void onRevoke() {
 		stopService();
 		sendVpnStatusChangedBroadcast();
