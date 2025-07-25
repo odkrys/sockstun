@@ -1,3 +1,7 @@
+![제목 없음](https://github.com/user-attachments/assets/f2bc7d5f-5e62-4995-a0d7-438ac7473643)
+![Screenshot_2025-07-25-12-22-28-410_hev sockstun](https://github.com/user-attachments/assets/3c70382a-6132-43f7-9b1d-34617bbc8e11)
+
+
 # SocksTun
 
 [![status](https://github.com/heiher/sockstun/actions/workflows/build.yaml/badge.svg?branch=master&event=push)](https://github.com/heiher/sockstun)
