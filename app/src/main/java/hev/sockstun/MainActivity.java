@@ -36,6 +36,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private EditText edittext_dns_ipv4;
 	private EditText edittext_dns_ipv6;
 	private CheckBox checkbox_udp_in_tcp;
+	private CheckBox checkbox_remote_dns;
 	private CheckBox checkbox_auto_start;
 	private CheckBox checkbox_global;
 	private CheckBox checkbox_ipv4;
@@ -60,22 +61,24 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		prefs = new Preferences(this);
 		setContentView(R.layout.main);
 
-		edittext_socks_addr = findViewById(R.id.socks_addr);
-		edittext_socks_port = findViewById(R.id.socks_port);
-		edittext_socks_user = findViewById(R.id.socks_user);
-		edittext_socks_pass = findViewById(R.id.socks_pass);
-		edittext_dns_ipv4 = findViewById(R.id.dns_ipv4);
-		edittext_dns_ipv6 = findViewById(R.id.dns_ipv6);
-		checkbox_ipv4 = findViewById(R.id.ipv4);
-		checkbox_ipv6 = findViewById(R.id.ipv6);
-		checkbox_global = findViewById(R.id.global);
-		checkbox_udp_in_tcp = findViewById(R.id.udp_in_tcp);
-		checkbox_auto_start = findViewById(R.id.auto_start);
-		button_apps = findViewById(R.id.apps);
-		button_save = findViewById(R.id.save);
-		button_control = findViewById(R.id.control);
+		edittext_socks_addr = (EditText) findViewById(R.id.socks_addr);
+		edittext_socks_port = (EditText) findViewById(R.id.socks_port);
+		edittext_socks_user = (EditText) findViewById(R.id.socks_user);
+		edittext_socks_pass = (EditText) findViewById(R.id.socks_pass);
+		edittext_dns_ipv4 = (EditText) findViewById(R.id.dns_ipv4);
+		edittext_dns_ipv6 = (EditText) findViewById(R.id.dns_ipv6);
+		checkbox_ipv4 = (CheckBox) findViewById(R.id.ipv4);
+		checkbox_ipv6 = (CheckBox) findViewById(R.id.ipv6);
+		checkbox_global = (CheckBox) findViewById(R.id.global);
+		checkbox_udp_in_tcp = (CheckBox) findViewById(R.id.udp_in_tcp);
+		checkbox_remote_dns = (CheckBox) findViewById(R.id.remote_dns);
+		checkbox_auto_start = (CheckBox) findViewById(R.id.auto_start);
+		button_apps = (Button) findViewById(R.id.apps);
+		button_save = (Button) findViewById(R.id.save);
+		button_control = (Button) findViewById(R.id.control);
 
 		checkbox_udp_in_tcp.setOnClickListener(this);
+		checkbox_remote_dns.setOnClickListener(this);
 		checkbox_auto_start.setOnClickListener(this);
 		checkbox_global.setOnClickListener(this);
 		button_apps.setOnClickListener(this);
@@ -149,7 +152,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	@Override
 	public void onClick(View view) {
-		if (view == checkbox_global) {
+		if (view == checkbox_global || view == checkbox_remote_dns) {
 			savePrefs();
 			updateUI();
 		} else if (view == button_apps) {
@@ -221,6 +224,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		checkbox_ipv6.setChecked(prefs.getIpv6());
 		checkbox_global.setChecked(prefs.getGlobal());
 		checkbox_udp_in_tcp.setChecked(prefs.getUdpInTcp());
+		checkbox_remote_dns.setChecked(prefs.getRemoteDns());
 		checkbox_auto_start.setChecked(prefs.getAutoStart());
 
 		boolean isVpnEnabled = prefs.getEnable();
@@ -230,9 +234,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		edittext_socks_port.setEnabled(editable);
 		edittext_socks_user.setEnabled(editable);
 		edittext_socks_pass.setEnabled(editable);
-		edittext_dns_ipv4.setEnabled(editable);
-		edittext_dns_ipv6.setEnabled(editable);
+		edittext_dns_ipv4.setEnabled(editable && !prefs.getRemoteDns());
+		edittext_dns_ipv6.setEnabled(editable && !prefs.getRemoteDns());
 		checkbox_udp_in_tcp.setEnabled(editable);
+		checkbox_remote_dns.setEnabled(editable);
 		checkbox_auto_start.setEnabled(editable);
 		checkbox_global.setEnabled(editable);
 		checkbox_ipv4.setEnabled(editable);
@@ -253,12 +258,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		prefs.setSocksPassword(edittext_socks_pass.getText().toString());
 		prefs.setDnsIpv4(edittext_dns_ipv4.getText().toString());
 		prefs.setDnsIpv6(edittext_dns_ipv6.getText().toString());
-		if (!checkbox_ipv4.isChecked() && !checkbox_ipv4.isChecked())
+		if (!checkbox_ipv4.isChecked() && !checkbox_ipv6.isChecked())
 		  checkbox_ipv4.setChecked(prefs.getIpv4());
 		prefs.setIpv4(checkbox_ipv4.isChecked());
 		prefs.setIpv6(checkbox_ipv6.isChecked());
 		prefs.setGlobal(checkbox_global.isChecked());
 		prefs.setUdpInTcp(checkbox_udp_in_tcp.isChecked());
+		prefs.setRemoteDns(checkbox_remote_dns.isChecked());
 		prefs.setAutoStart(checkbox_auto_start.isChecked());
 	}
 }
