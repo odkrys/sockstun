@@ -154,18 +154,24 @@ public class TProxyService extends VpnService {
 				"  address: '" + prefs.getSocksAddress() + "'\n" +
 				"  udp: '" + (prefs.getUdpInTcp() ? "tcp" : "udp") + "'\n";
 
+			if (!prefs.getSocksUdpAddress().isEmpty()) {
+				tproxy_conf += "  udp-address: '" + prefs.getSocksUdpAddress() + "'\n";
+			}
+
 			if (!prefs.getSocksUsername().isEmpty() &&
 				!prefs.getSocksPassword().isEmpty()) {
 				tproxy_conf += "  username: '" + prefs.getSocksUsername() + "'\n";
 				tproxy_conf += "  password: '" + prefs.getSocksPassword() + "'\n";
 			}
 
-			tproxy_conf += "mapdns:\n" +
-				"  address: " + prefs.getMappedDns() + "\n" +
-				"  port: 53\n" +
-				"  network: 240.0.0.0\n" +
-				"  netmask: 240.0.0.0\n" +
-				"  cache-size: 10000\n";
+			if (prefs.getRemoteDns()) {
+				tproxy_conf += "mapdns:\n" +
+					"  address: " + prefs.getMappedDns() + "\n" +
+					"  port: 53\n" +
+					"  network: 240.0.0.0\n" +
+					"  netmask: 240.0.0.0\n" +
+					"  cache-size: 10000\n";
+			}
 
 			fos.write(tproxy_conf.getBytes());
 			fos.close();

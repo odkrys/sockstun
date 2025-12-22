@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat;
 public class MainActivity extends Activity implements View.OnClickListener {
 	private Preferences prefs;
 	private EditText edittext_socks_addr;
+	private EditText edittext_socks_udp_addr;
 	private EditText edittext_socks_port;
 	private EditText edittext_socks_user;
 	private EditText edittext_socks_pass;
@@ -62,6 +63,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		setContentView(R.layout.main);
 
 		edittext_socks_addr = (EditText) findViewById(R.id.socks_addr);
+		edittext_socks_udp_addr = (EditText) findViewById(R.id.socks_udp_addr);
 		edittext_socks_port = (EditText) findViewById(R.id.socks_port);
 		edittext_socks_user = (EditText) findViewById(R.id.socks_user);
 		edittext_socks_pass = (EditText) findViewById(R.id.socks_pass);
@@ -215,6 +217,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	private void updateUI() {
 		edittext_socks_addr.setText(prefs.getSocksAddress());
+		edittext_socks_udp_addr.setText(prefs.getSocksUdpAddress());
 		edittext_socks_port.setText(Integer.toString(prefs.getSocksPort()));
 		edittext_socks_user.setText(prefs.getSocksUsername());
 		edittext_socks_pass.setText(prefs.getSocksPassword());
@@ -231,6 +234,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		boolean editable = !isVpnEnabled;
 
 		edittext_socks_addr.setEnabled(editable);
+		edittext_socks_udp_addr.setEnabled(editable);
 		edittext_socks_port.setEnabled(editable);
 		edittext_socks_user.setEnabled(editable);
 		edittext_socks_pass.setEnabled(editable);
@@ -253,6 +257,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	private void savePrefs() {
 		prefs.setSocksAddress(edittext_socks_addr.getText().toString());
+		prefs.setSocksUdpAddress(edittext_socks_udp_addr.getText().toString());
 		prefs.setSocksPort(Integer.parseInt(edittext_socks_port.getText().toString()));
 		prefs.setSocksUsername(edittext_socks_user.getText().toString());
 		prefs.setSocksPassword(edittext_socks_pass.getText().toString());
