@@ -101,7 +101,7 @@
 				android:text="@string/remote_dns"/>
 			<CheckBox
 				android:id="@+id/udp_in_tcp"
-				android:layout_width="fill_parent"
+				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:layout_weight="1"
 				android:text="@string/udp_in_tcp"/>
