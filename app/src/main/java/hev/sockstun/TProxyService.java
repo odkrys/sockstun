@@ -222,7 +222,7 @@ public class TProxyService extends VpnService {
 				.setSmallIcon(android.R.drawable.sym_def_app_icon)
 				.setContentIntent(contentIntent)
 				.setOngoing(isVpnEnabled)
-				.addAction(R.drawable.ic_disconnect, "Stop", disconnectPendingIntent);
+				.addAction(0, "Stop", disconnectPendingIntent);
 
 		Notification notify = notificationBuilder.build();
 
